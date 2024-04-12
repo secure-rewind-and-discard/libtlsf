@@ -28,7 +28,7 @@ If the application relies on pre-built binaries which make calls to the `malloc(
 LD_PRELOAD=/path/to/libtlsf/src/libtlsf.so
 ``` 
 ## Simple Example
-We provide an example that demonstrate the library's use [simple_example/](./example/simple_example)
+We provide an example that demonstrate the library's use [example/](./example/)
 
 ## Customize Heap Size
 By default, the heap domain size is set to `0x200000000 (8GB)`. You can customize this number by using the `APP_HEAP_SIZE` environmental variable. 
