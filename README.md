@@ -34,15 +34,19 @@ We provide an example that demonstrate the library's use [example/](./example/)
 By default, the heap domain size is set to `0x200000000 (8GB)`. You can customize this number by using the `APP_HEAP_SIZE` environmental variable. 
 
 ##  Multithread Support
-To support multithread application, the library should be compiled with `TLSF_MULTITHREAD` option. 
+To support multithread application, the library should be compiled with `TLSF_MULTITHREAD` option.
+
+## CHERI-LIBTLSF
+LIBTLSF is also compatible with CHERI architecture. To do this, set the `CHERI` variable to 1 during compilation:
+```
+gmake CHERI=1
+```
+> [!IMPORTANT]
+> Use `gmake` to compile, not `make`.
 
 ## License 
-© Ericsson AB 2022-2023
+© Ericsson AB 2022-2024
 
 BSD 3-Clause License
 
 The original TLSF implementation by mattconte/tlsf licensed under BSD 3-Clause License
-
-
-
-

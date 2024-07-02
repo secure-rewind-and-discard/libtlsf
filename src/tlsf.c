@@ -1,9 +1,26 @@
+/**
+ * tlsf
+ * Two-Level Segregated Fit memory allocator implementation. 
+ * Written by Matthew Conte (matt@baisoku.org). 
+ * Released under the BSD license.
+ * 
+ * Modified by Sacha Ruchlejmer, and Merve Gülmez to support CHERI architecture on 2024-07-02
+ * 
+ * @copyright © Ericsson AB 2024
+ * 
+ * SPDX-License-Identifier: BSD 3-Clause
+ */
+
 #include <assert.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef CHERI
+#include <stdint.h>
+#endif
 
 #include "tlsf.h"
 
@@ -215,11 +232,21 @@ enum tlsf_public
 enum tlsf_private
 {
 #if defined (TLSF_64BIT)
-	/* All allocation sizes and addresses are aligned to 8 bytes. */
+#ifdef CHERI
+		/* All allocation sizes and addresses are aligned to 16 bytes due to being capabilities. */
+		ALIGN_SIZE_LOG2 = 4,
+#else
+		/* All allocation sizes and addresses are aligned to 8 bytes. */
+		ALIGN_SIZE_LOG2 = 3,
+#endif
+#else
+#ifdef CHERI
+	/* All allocation sizes and addresses are aligned to 8 bytes due to being capabilities. */
 	ALIGN_SIZE_LOG2 = 3,
 #else
-	/* All allocation sizes and addresses are aligned to 4 bytes. */
-	ALIGN_SIZE_LOG2 = 2,
+		/* All allocation sizes and addresses are aligned to 4 bytes. */
+		ALIGN_SIZE_LOG2 = 2,
+#endif
 #endif
 	ALIGN_SIZE = (1 << ALIGN_SIZE_LOG2),
 
@@ -325,11 +352,20 @@ static const size_t block_header_prev_free_bit = 1 << 1;
 ** The size of the block header exposed to used blocks is the size field.
 ** The prev_phys_block field is stored *inside* the previous free block.
 */
-static const size_t block_header_overhead = sizeof(size_t);
+#ifdef CHERI
+	static const size_t block_header_overhead = 2*sizeof(size_t);
+#else
+	static const size_t block_header_overhead = sizeof(size_t);
+#endif
 
 /* User data starts directly after the size field in a used block. */
+#ifdef CHERI
+static const size_t block_start_offset =
+	offsetof(block_header_t, size) + 2*sizeof(size_t);
+#else
 static const size_t block_start_offset =
 	offsetof(block_header_t, size) + sizeof(size_t);
+#endif
 
 /*
 ** A free block must be large enough to store its header minus the size of
@@ -423,7 +459,11 @@ static void* block_to_ptr(const block_header_t* block)
 /* Return location of next block after block of given size. */
 static block_header_t* offset_to_block(const void* ptr, size_t size)
 {
+#ifdef CHERI
+	return tlsf_cast(block_header_t*, cheri_address_set(ptr, tlsf_cast(tlsfptr_t, ptr)+ size));
+#else
 	return tlsf_cast(block_header_t*, tlsf_cast(tlsfptr_t, ptr) + size);
+#endif
 }
 
 /* Return location of previous block. */
@@ -479,8 +519,12 @@ static size_t align_down(size_t x, size_t align)
 
 static void* align_ptr(const void* ptr, size_t align)
 {
+#ifdef CHERI
+	const void* aligned = __builtin_align_up(ptr, ~cheri_representable_alignment_mask(align) + 1 );
+#else
 	const tlsfptr_t aligned =
 		(tlsf_cast(tlsfptr_t, ptr) + (align - 1)) & ~(align - 1);
+#endif
 	tlsf_assert(0 == (align & (align - 1)) && "must align to a power of two");
 	return tlsf_cast(void*, aligned);
 }
@@ -1159,9 +1203,13 @@ void* tlsf_memalign(tlsf_t tlsf, size_t align, size_t size)
 		{
 			const size_t gap_remain = gap_minimum - gap;
 			const size_t offset = tlsf_max(gap_remain, align);
+#ifdef CHERI
+			const void* next_aligned = tlsf_cast(void*,
+				(uintptr_t)tlsf_cast(tlsfptr_t, aligned) + offset);
+#else
 			const void* next_aligned = tlsf_cast(void*,
 				tlsf_cast(tlsfptr_t, aligned) + offset);
-
+#endif
 			aligned = align_ptr(next_aligned, align);
 			gap = tlsf_cast(size_t,
 				tlsf_cast(tlsfptr_t, aligned) - tlsf_cast(tlsfptr_t, ptr));
