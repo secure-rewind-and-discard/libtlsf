@@ -25,12 +25,13 @@
 
 
 
-int main()
-{
-    void *ptr; 
+int main(){
+    
+    int *ptr; 
 
-    ptr = malloc(5); 
-
+    ptr = malloc(5);
+    
     free(ptr);
-}
 
+    return 0;
+}

@@ -29,7 +29,15 @@ To build examples, run `make` in the [example/](./example/) directory:
 cd ../example
 make
 ```
-If `libtlsf.so` can be found in the dynamic linker search path, the resulting example executable can be tested as indicated below using gdb. 
+If `libtlsf.so` can be found in the dynamic linker search path, the resulting example executable can be tested as indicated below using gdb.
+
+## Compiling with CHERI
+To compile this example for the CHERI architecture, set the `CHERI` variable to 1 during compilation:
+```
+gmake CHERI=1
+```
+> [!IMPORTANT]
+> Use `gmake` to compile, not `make`.
 
 ### Debuging with GDB 
 
@@ -54,10 +62,3 @@ step
 GDB Output
 
 ![output](gdb_output.PNG)
-
-
-
-
-
-
-
